@@ -1,42 +1,35 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import baseurl from "../utils/constants";
 let commentUrl;
 
-export default class Comment extends React.Component {
-  constructor(props) {
-    super();
-    this.state = {
-      comment: "",
-      error: "",
-      comments: [],
-    };
-  }
-  handleInput = ({ target }) => {
+export default function Comment(props) {
+  const [comment, setComment] = useState("");
+  const [error, setError] = useState("");
+  const [comments, setComments] = useState([]);
+  let handleInput = ({ target }) => {
     let { name, value } = target;
-    this.setState({
-      [name]: value,
-    });
-  };
-  checkInput = () => {
-    let { comment } = this.state;
-    if (!comment) {
-      this.setState({
-        error: "comment required to add*",
-      });
+
+    if (name === "comment") {
+      setComment(value);
     }
   };
-  componentDidMount() {
-    commentUrl = `${baseurl}/api/articles/${this.props.slug}/comments`;
-    this.fetchComments();
-  }
-  addComment = () => {
-    let { comment } = this.state;
+  let checkInput = () => {
+    if (!comment) {
+      setError("comment required to add*");
+    }
+  };
+
+  useEffect(() => {
+    commentUrl = `${baseurl}/api/articles/${props.slug}/comments`;
+    fetchComments();
+  }, [comments]);
+  let addComment = () => {
     fetch(commentUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        authorization: `${this.props.user.token}`,
+        authorization: `${props.user.token}`,
       },
       body: JSON.stringify({
         comment: {
@@ -51,22 +44,14 @@ export default class Comment extends React.Component {
         return res.json();
       })
       .then((comment) => {
-        this.setState(
-          {
-            comment: "",
-          },
-          () => {
-            this.fetchComments();
-          }
-        );
+        setComment("");
+        fetchComments();
       })
       .catch((errors) => {
-        this.setState({
-          error: errors.error,
-        });
+        setError(errors.error);
       });
   };
-  fetchComments = () => {
+  let fetchComments = () => {
     fetch(commentUrl)
       .then((res) => {
         if (!res.ok) {
@@ -75,22 +60,18 @@ export default class Comment extends React.Component {
         return res.json();
       })
       .then((comments) => {
-        this.setState({
-          comments: comments.comments,
-        });
+        setComments(comments.comments);
       })
       .catch((errors) => {
-        this.setState({
-          error: errors.error,
-        });
+        setError(errors.error);
       });
   };
-  deleteComment = (id) => {
+  let deleteComment = (id) => {
     fetch(`${commentUrl}/${id}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
-        authorization: `${this.props.user.token}`,
+        authorization: `${props.user.token}`,
       },
     })
       .then((res) => {
@@ -100,79 +81,68 @@ export default class Comment extends React.Component {
         return res.json();
       })
       .then((data) => {
-        this.setState(
-          {
-            comments: [],
-          },
-          () => {
-            this.fetchComments();
-          }
-        );
+        setComments([]);
+        fetchComments();
       })
       .catch((errors) => {
-        this.setState({
-          error: errors.error,
-        });
+        setError(errors.error);
       });
   };
-  render() {
-    let { comment, error } = this.state;
-    let formControlClass =
-      "text-sm rounded-md w-full py-1 px-4 my-2 border-2 border-solid border-blue-900 text-blue-900";
+  let formControlClass =
+    "text-sm rounded-md w-full py-1 px-4 my-2 border-2 border-solid border-blue-900 text-blue-900";
 
-    return (
-      <div className=" w-1/3 mx-auto">
-        {this.props.user ? (
-          <>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                this.checkInput();
-                if (!error) {
-                  this.addComment();
-                }
-              }}
-            >
-              <span className="text-red-500 text-sm">{this.state.error}</span>
-              <textarea
-                className={formControlClass}
-                placeholder="Write comment"
-                rows={3}
-                onChange={this.handleInput}
-                value={comment}
-                name="comment"
-              ></textarea>
-              <input
-                type="submit"
-                value="Add Comment"
-                className={`bg-blue-300 hover:scale-110 blue ${formControlClass}`}
-              ></input>
-            </form>
-          </>
-        ) : (
-          <NavLink to={"/login"}>
-            <p className="text-base m-4 text-center">
-              <span className="text-green-500">SignIn/SignUp</span> to add
-              <span className="blue"> Comment</span>
-            </p>
-          </NavLink>
-        )}
-        <div>
-          <h4 className="blue text-lg m-4 text-center">Comments</h4>
-          {this.state.comments.map((comment, i) => {
-            return (
-              <SingleComment
-                deleteComment={this.deleteComment}
-                user={this.props.user}
-                key={i}
-                comment={comment}
-              />
-            );
-          })}
-        </div>
+  return (
+    <div className=" w-1/3 mx-auto">
+      {props.user ? (
+        <>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              checkInput();
+              if (!error) {
+                addComment();
+              }
+            }}
+          >
+            <span className="text-red-500 text-sm">{error}</span>
+            <textarea
+              className={formControlClass}
+              placeholder="Write comment"
+              rows={3}
+              onChange={handleInput}
+              value={comment}
+              name="comment"
+            ></textarea>
+            <input
+              type="submit"
+              value="Add Comment"
+              className={`bg-blue-300 hover:scale-110 blue ${formControlClass}`}
+            ></input>
+          </form>
+        </>
+      ) : (
+        <NavLink to={"/login"}>
+          <p className="text-base m-4 text-center">
+            <span className="text-green-500">SignIn/SignUp</span> to add
+            <span className="blue"> Comment</span>
+          </p>
+        </NavLink>
+      )}
+      <div>
+        <h4 className="blue text-lg m-4 text-center">Comments</h4>
+        {comments.map((comment, i) => {
+          return (
+            <SingleComment
+              deleteComment={deleteComment}
+              user={props.user}
+              key={i}
+              comment={comment}
+            />
+          );
+        })}
       </div>
-    );
-  }
+    </div>
+  );
 }
 
 function SingleComment(props) {

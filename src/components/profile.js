@@ -92,7 +92,7 @@ class Profile extends React.Component {
               currentUser={this.state.currentUser}
               follow={
                 this.state.currentUser
-                  ? this.state.user.username !== this.state.currentUser.username
+                  ? this.state.user.username !== this.state.currentUsername
                   : ""
               }
             />

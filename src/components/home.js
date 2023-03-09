@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext, useEffect, useState } from "react";
 import Hero from "./hero";
 import Sidebar from "./sidebar";
 import ArticlesFeed from "./articlesFeed";
@@ -7,109 +7,128 @@ import Pagination from "./pagination";
 import fetchData from "../utils/fetchData";
 import ErrorBoundary from "./errorBoundary";
 import { userContext } from "./userContext";
+import Loading from "./loading";
 
-class Home extends React.Component {
-  constructor() {
-    super();
-    this.state = {
-      openTag: "",
-      articles: null,
-      activeIndex: 0,
-      articlesCount: 0,
-      myfeed: false,
-      author: null,
-      error: "",
-    };
-  }
-  componentDidMount() {
+function Home(props) {
+  const [openTag, setOpenTag] = useState("");
+  const [articles, setArticles] = useState(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [articlesCount, setArticlesCount] = useState(0);
+  const [myfeed, setMyfeed] = useState(false);
+  const [author, setAuthor] = useState(null);
+  const [error, setError] = useState("");
+  const [tags, setTags] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
     fetchData(
-      this.state.myfeed === true ? `&author=${this.state.author}` : "",
-      this.state.activeIndex,
-      this.handleArticlesData,
-      this.context.user ? this.context.user.token : "",
-      this.state.openTag ? `tag=${this.state.openTag}&` : ""
+      myfeed === true ? `&author=${author}` : "",
+      activeIndex,
+      handleArticlesData,
+      context.user ? context.user.token : "",
+      openTag ? `tag=${openTag}&` : ""
     );
-    if (this.context.user) {
-      this.setState({
-        author: this.context.user.username,
-      });
+    if (context.user) {
+      setAuthor(context.user.username);
     }
-  }
-  handleArticlesData = (key, value) => {
-    this.setState({
-      [key]: value,
-    });
+  }, [openTag, activeIndex, myfeed]);
+  let handleArticlesData = (key, value) => {
+    if (key === "articles") {
+      setArticles(value);
+    }
+    if (key === "articlesCount") {
+      setArticlesCount(value);
+    }
+    if (key === "activeIndex") {
+      setActiveIndex(value);
+    }
+    if (key === "author") {
+      setAuthor(value);
+    }
+    if (key === "openTag") {
+      setOpenTag(value);
+    }
+    if (key === "myfeed") {
+      setMyfeed(value);
+    }
+    if (key === "error") {
+      setError(value);
+    }
   };
-  handleState = (key, value) => {
-    this.setState(
-      {
-        openTag: "",
-        articles: null,
-        articlesCount: 0,
-        myfeed: false,
-        [key]: value,
-      },
-      () => {
-        if (
-          (key === "openTag" && value !== "") ||
-          key === "activeIndex" ||
-          key === "myfeed"
-        ) {
-          fetchData(
-            this.state.myfeed === true ? `&author=${this.state.author}` : "",
-            this.state.activeIndex,
-            this.handleArticlesData,
-            this.props && this.context.user ? this.context.user.token : "",
-            this.state.openTag ? `tag=${this.state.openTag}&` : ""
-          );
-        }
-      }
-    );
+  let handleState = (key, value) => {
+    setLoading(true);
+    setOpenTag("");
+    setArticles(null);
+    setArticlesCount(0);
+    setMyfeed(false);
+
+    if (key === "articles") {
+      setArticles(value);
+    }
+    if (key === "articlesCount") {
+      setArticlesCount(value);
+    }
+    if (key === "activeIndex") {
+      setActiveIndex(value);
+    }
+    if (key === "author") {
+      setAuthor(value);
+    }
+    if (key === "openTag") {
+      setOpenTag(value);
+    }
+    if (key === "myfeed") {
+      setMyfeed(value);
+    }
+    if (key === "error") {
+      setError(value);
+    }
+
+    setLoading(false);
   };
-  static contextType = userContext;
-  render() {
-    return (
-      <div className="main">
-        <Hero />
-        <div className="flex justify-end">
-          <div className="home w-3/5">
-            <Feed
-              handleState={this.handleState}
-              openTag={this.state.openTag}
-              author={this.state.author}
-              myfeed={this.state.myfeed}
-            />
-            {this.state.error ? (
-              <p className="text-base capitalize text-center m-4">
-                {this.state.error}
-              </p>
-            ) : (
-              <>
-                <ArticlesFeed
-                  articles={this.state.articles}
-                  openTag={this.state.openTag}
-                  user={this.context.user}
-                  handleState={this.handleState}
+
+  let context = useContext(userContext);
+  return (
+    <div className="main">
+      <Hero />
+      <div className="flex justify-end">
+        <div className="home w-3/5">
+          <Feed
+            handleState={handleState}
+            openTag={openTag}
+            author={author}
+            myfeed={myfeed}
+          />
+          {error ? (
+            <p className="text-base capitalize text-center m-4">{error}</p>
+          ) : loading ? (
+            <Loading />
+          ) : (
+            <>
+              <ArticlesFeed
+                articles={articles}
+                openTag={openTag}
+                user={context.user}
+                handleState={handleState}
+              />
+              {articles ? (
+                <Pagination
+                  handleState={handleState}
+                  articlesCount={articlesCount}
+                  activeIndex={activeIndex}
                 />
-                {this.state.articles ? (
-                  <Pagination
-                    handleState={this.handleState}
-                    articlesCount={this.state.articlesCount}
-                    activeIndex={this.state.activeIndex}
-                  />
-                ) : (
-                  ""
-                )}
-              </>
-            )}
-          </div>
-          <ErrorBoundary message="Error occured while fetching tags. Please reload the page">
-            <Sidebar handleState={this.handleState} tags={this.state.tags} />
-          </ErrorBoundary>
+              ) : (
+                ""
+              )}
+            </>
+          )}
         </div>
+        <ErrorBoundary message="Error occured while fetching tags. Please reload the page">
+          <Sidebar handleState={handleState} tags={tags} />
+        </ErrorBoundary>
       </div>
-    );
-  }
+    </div>
+  );
 }
 
 export default Home;

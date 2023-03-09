@@ -1,35 +1,46 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { NavLink, withRouter } from "react-router-dom";
 import baseurl from "../utils/constants";
 import Loading from "./loading";
 
-class ArticlesFeed extends React.Component {
-  state = {
-    error: "",
-    user: null,
-  };
-  componentDidMount() {
-    if (this.props.user) {
-      this.setState({
-        user: this.props.user,
-        error: this.props.error,
-      });
+function ArticlesFeed(props) {
+  // state = {
+  //   error: "",
+  //   user: null,
+  // };
+  const [error, setError] = useState("");
+  const [user, setUser] = useState(null);
+  // componentDidMount() {
+  //   if (this.props.user) {
+  //     this.setState({
+  //       user: this.props.user,
+  //       error: this.props.error,
+  //     });
+  //   }
+  // }
+  useEffect(() => {
+    if (props.user) {
+      setUser(props.user);
+      setError(props.error);
     }
-  }
-  componentDidUpdate() {
-    if (this.state.error !== this.props.error) {
-      this.setState({
-        error: this.props.error,
-      });
+    if (error !== props.error) {
+      setError(props.error);
     }
-  }
-  favoriteArticle = (slug, favorited) => {
-    if (this.state.user) {
+  }, [props.error]);
+  // componentDidUpdate() {
+  //   if (this.state.error !== this.props.error) {
+  //     this.setState({
+  //       error: this.props.error,
+  //     });
+  //   }
+  // }
+  let favoriteArticle = (slug, favorited) => {
+    if (user) {
       fetch(`${baseurl}/api/articles/${slug}/favorite`, {
         method: favorited ? "DELETE" : "POST",
         headers: {
           "Content-Type": "application/json",
-          authorization: `${this.props.user.token}`,
+          authorization: `${props.user.token}`,
         },
       })
         .then((res) => {
@@ -39,51 +50,50 @@ class ArticlesFeed extends React.Component {
           return res.json();
         })
         .then((article) => {
-          this.props.handleState("myfeed", false);
-          if (this.props.match.params.username) {
-            this.props.handleState("myfeed", this.props.myfeed);
+          props.handleState("myfeed", false);
+          if (props.match.params.username) {
+            props.handleState("myfeed", props.myfeed);
           }
         })
         .catch((errors) => {
-          this.setState({
-            error: errors.error,
-          });
+          // this.setState({
+          //   error: errors.error,
+          // });
+          setError(errors.error);
         });
     } else {
       alert("you have to log in first");
     }
   };
-  render() {
-    let articles = this.props.articles;
-    return (
-      <section className="articles">
-        {articles && articles.length < 1 ? (
-          <p className="text-center my-4 text-xl capitalize">
-            no articles to show
-          </p>
-        ) : (
-          ""
-        )}
-        {articles && !this.state.error ? (
-          articles.map((article, i) => {
-            return (
-              <ArticleFeed
-                favoriteArticle={this.favoriteArticle}
-                article={article}
-                key={i}
-              />
-            );
-          })
-        ) : this.state.error ? (
-          <p className="text-center my-4 text-xl capitalize">
-            no articles to show
-          </p>
-        ) : (
-          <Loading />
-        )}
-      </section>
-    );
-  }
+  let articles = props.articles;
+  return (
+    <section className="articles">
+      {articles && articles.length < 1 ? (
+        <p className="text-center my-4 text-xl capitalize">
+          no articles to show
+        </p>
+      ) : (
+        ""
+      )}
+      {articles && !error ? (
+        articles.map((article, i) => {
+          return (
+            <ArticleFeed
+              favoriteArticle={favoriteArticle}
+              article={article}
+              key={i}
+            />
+          );
+        })
+      ) : error ? (
+        <p className="text-center my-4 text-xl capitalize">
+          no articles to show
+        </p>
+      ) : (
+        <Loading />
+      )}
+    </section>
+  );
 }
 
 function ArticleFeed(props) {

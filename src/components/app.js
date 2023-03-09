@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Route, Switch } from "react-router-dom";
 import "../styles/index.css";
 import Header from "./header";
@@ -16,18 +16,15 @@ import baseurl from "../utils/constants";
 import ErrorBoundary from "./errorBoundary";
 import { userContext } from "./userContext";
 
-class App extends React.Component {
-  state = {
-    loggedIn: false,
-    user: null,
-    verified: false,
-  };
-  componentDidMount() {
+function App(props) {
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
+  const [verified, setVerified] = useState(false);
+
+  useEffect(() => {
     const token = JSON.parse(localStorage.getItem("userToken"));
     if (token) {
-      this.setState({
-        verified: "verifying",
-      });
+      setVerified("verifying");
       fetch(`${baseurl}/api/user`, {
         method: "GET",
         headers: {
@@ -39,56 +36,46 @@ class App extends React.Component {
         })
         .then((data) => {
           if (data && data.user) {
-            this.setState({
-              loggedIn: true,
-              verified: true,
-              user: data.user,
-            });
+            setLoggedIn(true);
+            setVerified(true);
+            setUser(data.user);
           }
         });
     }
-  }
-  handleLogIn = (user) => {
-    this.setState({
-      loggedIn: !this.state.loggedIn,
-      user: user,
-    });
+  }, []);
+  let handleLogIn = (user) => {
+    setLoggedIn(!loggedIn);
+    setUser(user);
   };
-  updateUser = (user) => {
-    this.setState({
-      user: user,
-    });
+  let updateUser = (user) => {
+    setUser(user);
   };
-  render() {
-    const user = this.state.user;
-    const loggedIn = this.state.loggedIn;
-    const contextData = { user, loggedIn };
-    return (
-      <>
-        {this.state.verified === "verifying" ? (
-          <>
-            <Loader content="Verifying User..." />
-            <div className="flex justify-center">
-              <div className=" loader m-12"></div>
-            </div>
-          </>
-        ) : (
-          <div className="container font-sans">
-            <userContext.Provider value={contextData}>
-              <ErrorBoundary message="Error occured while loading header. Please reload the page">
-                <Header handleLogIn={this.handleLogIn} />
-              </ErrorBoundary>
-              {this.state.loggedIn ? (
-                <Authenticated updateUser={this.updateUser} />
-              ) : (
-                <Unauthenticated handleLogIn={this.handleLogIn} />
-              )}
-            </userContext.Provider>
+  const contextData = { user, loggedIn };
+  return (
+    <>
+      {verified === "verifying" ? (
+        <>
+          <Loader content="Verifying User..." />
+          <div className="flex justify-center">
+            <div className=" loader m-12"></div>
           </div>
-        )}
-      </>
-    );
-  }
+        </>
+      ) : (
+        <div className="container font-sans">
+          <userContext.Provider value={contextData}>
+            <ErrorBoundary message="Error occured while loading header. Please reload the page">
+              <Header handleLogIn={handleLogIn} />
+            </ErrorBoundary>
+            {loggedIn ? (
+              <Authenticated updateUser={updateUser} />
+            ) : (
+              <Unauthenticated handleLogIn={handleLogIn} />
+            )}
+          </userContext.Provider>
+        </div>
+      )}
+    </>
+  );
 }
 
 function Authenticated(props) {
